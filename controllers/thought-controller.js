@@ -1,12 +1,12 @@
-const { User } = require('../models');
+const { Thought, User } = require('../models');
 
-const userController = {
+const thoughtController = {
     // get all pizzas
-    getAllUsers(req, res) {
-        User.find({})
+    getAllThoughts(req, res) {
+        Thought.find({})
             // To populate a field, just chain the .populate() method onto your query, passing in an object with the key path plus the value of the field you want populated.
             .populate({
-                path: 'thoughts',
+                path: 'thoughtText',
                 // Note that we also used the select option inside of populate(), so that we can tell Mongoose that we don't care about the __v field on comments either. The minus sign - in front of the field indicates that we don't want it to be returned. If we didn't have it, it would mean that it would return only the __v field.
                 select: '-__v'
             })
@@ -20,10 +20,10 @@ const userController = {
     },
 
     // get one pizza by id
-    getUserById({ params }, res) {
-        User.findOne({ _id: params.id })
+    getThoughtById({ params }, res) {
+        Thought.findOne({ _id: params.id })
             .populate({
-                path: 'thoughts',
+                path: 'thoughtText',
                 select: '-__v'
             })
             .select('-__v')
@@ -41,15 +41,22 @@ const userController = {
     },
 
     // createPizza
-    createUser({ body }, res) {
-        User.create(body)
-            .then(dbUserData => res.json(dbUserData))
+    createThought({ body }, res) {
+        Thought.create(body)
+            .then(({ _id }) => {
+                return User.findOneAndUpdate(
+                    { _id: body.userId },
+                    { $push: { thoughts: _id } },
+                    { new: true }
+                );
+            })
+            .then(dbUserData => res.json(dbUserData)            )
             .catch(err => res.status(400).json(err));
     },
 
     // update pizza by id
-    updateUserById({ params, body }, res) {
-        User.findOneAndUpdate({ _id: params.id }, body, { new: true, runValidators: true })
+    updateThoughtById({ params, body }, res) {
+        Thought.findOneAndUpdate({ _id: params.id }, body, { new: true, runValidators: true })
             .then(dbUserData => {
                 if (!dbUserData) {
                     res.status(404).json({ message: 'No user found with this id!' });
@@ -61,8 +68,8 @@ const userController = {
     },
 
     // delete pizza
-    deleteUser({ params }, res) {
-        User.findOneAndDelete({ _id: params.id })
+    deleteThought({ params }, res) {
+        Thought.findOneAndDelete({ _id: params.id })
             .then(dbUserData => {
                 if (!dbUserData) {
                     res.status(404).json({ message: 'No user found with this id!' });
@@ -73,10 +80,10 @@ const userController = {
             .catch(err => res.status(400).json(err));
     },
 
-    addFriend({ params, body }, res) {
-        User.findOneAndUpdate(
-            { _id: params.userId },
-            { $push: { friends: params.friendId } },
+    addReaction({ params, body }, res) {
+        Thought.findOneAndUpdate(
+            { _id: params.thoughtId },
+            { $push: { reactions: body } },
             { new: true }
         )
             .then(dbUserData => {
@@ -90,10 +97,10 @@ const userController = {
     },
 
     // remove reply
-    removeFriend({ params }, res) {
-        User.findOneAndUpdate(
-            { _id: params.userId }, 
-            { $pull: { friends: { friendId: params.friendId } } },
+    removeReaction({ params }, res) {
+        Thought.findOneAndUpdate(
+            { _id: params.thoughtId },
+            { $pull: { reactions: { reactionId: params.reactionId } } },
             { new: true }
         )
             .then(dbUserData => res.json(dbUserData))
@@ -102,4 +109,4 @@ const userController = {
 };
 
 
-module.exports = userController;
+module.exports = thoughtController;

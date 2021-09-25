@@ -4,7 +4,9 @@ const {
     getUserById,
     createUser,
     updateUserById,
-    deleteUser
+    deleteUser,
+    addFriend,
+    removeFriend
   } = require('../../controllers/user-controller');
 
 // Set up GET all and POST at /api/pizzas
@@ -19,6 +21,13 @@ router
   .get(getUserById)
   .put(updateUserById)
   .delete(deleteUser);
+
+// /api/comments/<pizzaId>/<commentId>
+router
+    .route('/:userId/friends/:friendId')
+    // This is a PUT route, instead of a POST, because technically we're not creating a new reply resource. Instead, we're just updating the existing comment resource.
+    .put(addFriend)
+    .delete(removeFriend);
 
 module.exports = router;
 
